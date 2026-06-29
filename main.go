@@ -71,49 +71,17 @@ func main() {
 	s.setupUI()
 	s.setupAudio()
 
+	if err := s.setupResources(); err != nil {
+		ui.ShowFatalError(s.App, "Failed to load resources: "+err.Error())
+		return
+	}
+
 	// Aliases for easier refactoring
 	a := s.App
 	w := s.Window
 	cfg := s.Cfg
 	ctx := s.Ctx
 	wg := s.Wg
-
-	gearData, err := assetFS.ReadFile("images/gear.svg")
-	if err != nil {
-		ui.ShowFatalError(a, "Failed to load gear.svg: "+err.Error())
-		return
-	}
-	gearResource := fyne.NewStaticResource("gear.svg", gearData)
-	loadData, err := assetFS.ReadFile("images/load.svg")
-	if err != nil {
-		ui.ShowFatalError(a, "Failed to load load.svg: "+err.Error())
-		return
-	}
-	loadResource := fyne.NewStaticResource("load.svg", loadData)
-	fileData, err := assetFS.ReadFile("images/file.svg")
-	if err != nil {
-		ui.ShowFatalError(a, "Failed to load file.svg: "+err.Error())
-		return
-	}
-	fileResource := fyne.NewStaticResource("file.svg", fileData)
-	playData, err := assetFS.ReadFile("images/play.svg")
-	if err != nil {
-		ui.ShowFatalError(a, "Failed to load play.svg: "+err.Error())
-		return
-	}
-	playResource := fyne.NewStaticResource("play.svg", playData)
-	stopData, err := assetFS.ReadFile("images/stop.svg")
-	if err != nil {
-		ui.ShowFatalError(a, "Failed to load stop.svg: "+err.Error())
-		return
-	}
-	stopResource := fyne.NewStaticResource("stop.svg", stopData)
-	refreshData, err := assetFS.ReadFile("images/refresh.svg")
-	if err != nil {
-		ui.ShowFatalError(a, "Failed to load refresh.svg: "+err.Error())
-		return
-	}
-	refreshResource := fyne.NewStaticResource("refresh.svg", refreshData)
 
 	w.SetCloseIntercept(func() {
 		s.OnExit()
@@ -222,8 +190,8 @@ func main() {
 		showSecondsCheck,
 		alarmEnabledCheck,
 		setAlarmButton,
-		widget.NewButtonWithIcon("", gearResource, func() {
-			ui.ShowSettingsDialog(a, cfg, s.SaveConfig, s.OnConfigChanged, loadResource, fileResource, playResource, stopResource, refreshResource, assetFS)
+		widget.NewButtonWithIcon("", s.GearResource, func() {
+			ui.ShowSettingsDialog(a, cfg, s.SaveConfig, s.OnConfigChanged, s.LoadResource, s.FileResource, s.PlayResource, s.StopResource, s.RefreshResource, assetFS)
 		}),
 	)
 

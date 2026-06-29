@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -47,6 +48,13 @@ type AppState struct {
 	AmPmLabel         ui.TextSetter
 	Indicator24       ui.TextSetter
 	TimezoneLabel     ui.TextSetter
+
+	GearResource    fyne.Resource
+	LoadResource    fyne.Resource
+	FileResource    fyne.Resource
+	PlayResource    fyne.Resource
+	StopResource    fyne.Resource
+	RefreshResource fyne.Resource
 }
 
 // setupConfig loads the application configuration from persistent storage.
@@ -70,6 +78,39 @@ func (s *AppState) setupUI() {
 	} else {
 		s.Indicator24.Hide()
 	}
+}
+
+// LoadStaticResource is a helper to load a static resource from the embedded filesystem.
+func (s *AppState) LoadStaticResource(path, name string) (fyne.Resource, error) {
+	data, err := assetFS.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load %s: %w", path, err)
+	}
+	return fyne.NewStaticResource(name, data), nil
+}
+
+// setupResources initializes all static application resources.
+func (s *AppState) setupResources() error {
+	var err error
+	if s.GearResource, err = s.LoadStaticResource("images/gear.svg", "gear.svg"); err != nil {
+		return err
+	}
+	if s.LoadResource, err = s.LoadStaticResource("images/load.svg", "load.svg"); err != nil {
+		return err
+	}
+	if s.FileResource, err = s.LoadStaticResource("images/file.svg", "file.svg"); err != nil {
+		return err
+	}
+	if s.PlayResource, err = s.LoadStaticResource("images/play.svg", "play.svg"); err != nil {
+		return err
+	}
+	if s.StopResource, err = s.LoadStaticResource("images/stop.svg", "stop.svg"); err != nil {
+		return err
+	}
+	if s.RefreshResource, err = s.LoadStaticResource("images/refresh.svg", "refresh.svg"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // RefreshResources generates UI resources (digits, separators, alarm icon)
