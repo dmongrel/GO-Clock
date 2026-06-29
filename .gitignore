@@ -12,6 +12,7 @@
 
 # Dependency directories
 vendor/
+dist/
 
 # Go module cache
 .cache/go-build/
