@@ -71,7 +71,14 @@ func (s *AppState) setupConfig() error {
 func (s *AppState) setupUI() {
 	s.AmPmLabel = ui.NewCustomText("AM", 20)
 	s.Indicator24 = ui.NewCustomText("24H", 20)
-	s.TimezoneLabel = ui.NewCustomText("UTC", 20)
+	s.TimezoneLabel = ui.NewCustomText(time.Now().Format("MST"), 20)
+
+	digitColor, err := utils.ParseHexColor(s.Cfg.Color.Digits)
+	if err == nil {
+		s.AmPmLabel.SetColor(digitColor)
+		s.Indicator24.SetColor(digitColor)
+		s.TimezoneLabel.SetColor(digitColor)
+	}
 
 	if s.Cfg.Clock.Mode24h {
 		s.AmPmLabel.Hide()
