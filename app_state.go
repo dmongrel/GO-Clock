@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Joel L. Caesar
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -16,6 +19,9 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 )
 
 //go:embed images/*.svg
@@ -48,6 +54,7 @@ type AppState struct {
 	AmPmLabel         ui.TextSetter
 	Indicator24       ui.TextSetter
 	TimezoneLabel     ui.TextSetter
+	SetAlarmButton    *widget.Button
 
 	GearResource    fyne.Resource
 	LoadResource    fyne.Resource
@@ -166,6 +173,101 @@ func (s *AppState) SaveConfig() {
 	if err := config.SaveConfig(s.Cfg); err != nil {
 		ui.ShowError(s.App, "Error saving config: "+err.Error())
 	}
+}
+
+// FormatAlarm formats the alarm time based on the 24-hour mode setting.
+func (s *AppState) FormatAlarm(t string) string {
+	tm, err := time.Parse("15:04", t)
+	if err != nil {
+		return t
+	}
+
+	if s.Cfg.Clock.Mode24h {
+		return tm.Format("15:04")
+	}
+
+	hour := tm.Hour()
+	ampm := "A"
+	if hour >= 12 {
+		ampm = "P"
+		if hour > 12 {
+			hour -= 12
+		}
+	} else if hour == 0 {
+		hour = 12
+	}
+	return fmt.Sprintf("%02d:%02d%s", hour, tm.Minute(), ampm)
+}
+
+// CreateSidebar constructs the UI layout for the application sidebar.
+func (s *AppState) CreateSidebar() fyne.CanvasObject {
+	s.SetAlarmButton = widget.NewButton("Set Alarm: "+s.FormatAlarm(s.Cfg.Alarm.Time), func() {
+		ui.ShowSetAlarmDialog(s.App, s.Cfg, func() {
+			s.SaveConfig()
+			s.SetAlarmButton.SetText("Set Alarm: " + s.FormatAlarm(s.Cfg.Alarm.Time))
+		})
+	})
+
+	mode24hCheck := widget.NewCheck("24-Hour Mode", func(b bool) {
+		s.Cfg.Clock.Mode24h = b
+		s.SaveConfig()
+		s.ClockContainer.UpdateSettings(s.Cfg.Clock.Mode24h, s.Cfg.Clock.ShowSeconds)
+		s.SetAlarmButton.SetText("Set Alarm: " + s.FormatAlarm(s.Cfg.Alarm.Time))
+		if b {
+			s.Indicator24.Show()
+			s.AmPmLabel.Hide()
+		} else {
+			s.Indicator24.Hide()
+			s.AmPmLabel.Show()
+		}
+	})
+	mode24hCheck.SetChecked(s.Cfg.Clock.Mode24h)
+
+	showSecondsCheck := widget.NewCheck("Show Seconds", func(b bool) {
+		s.Cfg.Clock.ShowSeconds = b
+		s.SaveConfig()
+		s.ClockContainer.UpdateSettings(s.Cfg.Clock.Mode24h, s.Cfg.Clock.ShowSeconds)
+		if b {
+			s.Window.Resize(fyne.NewSize(915, 240))
+		} else {
+			s.Window.Resize(fyne.NewSize(658, 240))
+		}
+		s.Window.Content().Refresh()
+	})
+	showSecondsCheck.SetChecked(s.Cfg.Clock.ShowSeconds)
+
+	alarmEnabledCheck := widget.NewCheck("Alarm Enabled", func(b bool) {
+		s.Cfg.Alarm.Enabled = b
+		s.SaveConfig()
+		if b {
+			s.AlarmIcon.Show()
+		} else {
+			s.AlarmIcon.Hide()
+			s.StopAlarm()
+		}
+	})
+	alarmEnabledCheck.SetChecked(s.Cfg.Alarm.Enabled)
+
+	sidebarContainer := container.NewVBox(
+		mode24hCheck,
+		showSecondsCheck,
+		alarmEnabledCheck,
+		s.SetAlarmButton,
+		widget.NewButtonWithIcon("", s.GearResource, func() {
+			ui.ShowSettingsDialog(s.App, s.Cfg, s.SaveConfig, s.OnConfigChanged, s.LoadResource, s.FileResource, s.PlayResource, s.StopResource, s.RefreshResource, assetFS)
+		}),
+	)
+
+	sidebarColor, err := utils.ParseHexColor(s.Cfg.Color.Sidebar)
+	if err != nil {
+		ui.ShowFatalError(s.App, "Failed to parse sidebar color: "+err.Error())
+		return container.NewStack()
+	}
+	s.SidebarBackground = canvas.NewRectangle(sidebarColor)
+	return container.NewStack(
+		s.SidebarBackground,
+		container.NewPadded(sidebarContainer),
+	)
 }
 
 // LoadAlarmData reads the alarm sound file into memory.
@@ -345,4 +447,41 @@ func (s *AppState) RunLayoutFixer(ctx context.Context, wg *sync.WaitGroup) {
 			}
 		}
 	}()
+}
+
+// CreateMainLayout constructs the main application UI layout.
+func (s *AppState) CreateMainLayout(sidebar fyne.CanvasObject) fyne.CanvasObject {
+	extraDetails := container.NewVBox(
+		s.AmPmLabel,
+		s.Indicator24,
+		s.TimezoneLabel,
+		layout.NewSpacer(),
+		s.AlarmIcon,
+	)
+
+	snoozeButton := widget.NewButton("Snooze ("+fmt.Sprintf("%d", s.Cfg.Alarm.SnoozeMinutes)+"m)", func() {
+		if s.IsAlarmPlaying {
+			s.StopAlarm()
+			s.SnoozeTimer = time.AfterFunc(time.Duration(s.Cfg.Alarm.SnoozeMinutes)*time.Minute, func() {
+				s.PlayAlarm()
+			})
+		}
+	})
+
+	// Clock with black background
+	bgColor, err := utils.ParseHexColor(s.Cfg.Color.Background)
+	if err != nil {
+		ui.ShowFatalError(s.App, "Failed to parse background color: "+err.Error())
+		return container.NewStack()
+	}
+	s.ClockBackground = canvas.NewRectangle(bgColor)
+
+	// Left side: [Clock + Extra] then [SnoozeButton]
+	clockAndExtras := container.NewBorder(nil, nil, nil, extraDetails, s.ClockContainer)
+	leftSide := container.NewVBox(
+		container.NewStack(s.ClockBackground, clockAndExtras),
+		snoozeButton,
+	)
+
+	return container.NewBorder(nil, nil, nil, sidebar, leftSide)
 }
