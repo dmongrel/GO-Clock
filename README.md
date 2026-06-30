@@ -5,6 +5,18 @@ A functional, windowed clock application written in Go, utilizing [Fyne](https:/
 ## Description
 Go-Clock is an industrial/utility-focused clock designed for Windows. It features a segmented clock face, customizable colors, alarm functionality with support for custom alarm sounds, and persistent settings.
 
+## Show Seconds
+<img width="1193" height="362" alt="image" src="https://github.com/user-attachments/assets/f4bbae42-4cf4-4753-84f5-a25715d7faf3" />
+
+## Hide Seconds
+<img width="859" height="362" alt="image" src="https://github.com/user-attachments/assets/db643233-80ef-49c9-a497-ad6903eb582f" />
+
+## Set Alarm
+<img width="392" height="429" alt="image" src="https://github.com/user-attachments/assets/128115a2-cad7-4b17-a605-78d47259dd70" />
+
+## Set/Upload .WAV or .MP3, Change Colors
+<img width="1042" height="819" alt="image" src="https://github.com/user-attachments/assets/5e3f7cc6-f6e0-4d0a-b5ee-07099aaafc52" />
+
 ## Dependencies
 - Go 1.26+
 - [Fyne](https://fyne.io/) (requires C compiler, e.g., GCC/MinGW)
