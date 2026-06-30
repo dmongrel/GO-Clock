@@ -10,4 +10,8 @@ run: build
 	./Go-Clock.exe
 
 dist: build
-	powershell -Command "Compress-Archive -Path Go-Clock.exe -DestinationPath dist/Go-Clock_1.0.0_Windows_x64.zip -Force"
+	goreleaser release --clean
+
+snapshot:
+	goreleaser release --snapshot --clean
+
