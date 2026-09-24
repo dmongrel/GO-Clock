@@ -100,6 +100,11 @@ func main() {
 	}
 	w.CenterOnScreen()
 
+	// Background tasks: alarm checking and layout correction. Both honour ctx
+	// and are waited on by OnExit.
+	s.RunAlarmChecker(ctx, wg)
+	s.RunLayoutFixer(ctx, wg)
+
 	// SPACE key for snooze
 	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
 		if k.Name == fyne.KeySpace {
