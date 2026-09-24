@@ -12,7 +12,10 @@
 
 # Dependency directories
 vendor/
-dist/
+
+# goreleaser output at the repo root only - NOT frontend/dist, which is
+# embedded into the binary and must be committed.
+/dist/
 
 # Go module cache
 .cache/go-build/

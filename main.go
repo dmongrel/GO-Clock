@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build !wails
+
+// Fyne entry point, the default build. The Wails v3 entry point in
+// main_wails.go carries the opposite tag. Both remain until the migration's
+// cutover task.
 package main
 
 import (
