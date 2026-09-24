@@ -61,7 +61,7 @@ func GenerateDigitResource(digit int, litColor, unlitColor color.Color) fyne.Res
 	dc.Fill()
 
 	// Draw all segments unlit first
-	for s := 0; s < 7; s++ {
+	for s := range 7 {
 		drawSegment(dc, s, unlitColor)
 	}
 

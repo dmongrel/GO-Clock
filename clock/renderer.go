@@ -89,10 +89,10 @@ func NewClockWidget(ctx context.Context, wg *sync.WaitGroup, digitRes map[rune]f
 	cw.ExtendBaseWidget(cw)
 
 	// Initialize images
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		cw.digits[i] = NewSizedImage(digitRes['0'], 100, 200)
 	}
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		cw.seps[i] = NewSizedImage(sepRes, 15, 200)
 	}
 
@@ -100,9 +100,7 @@ func NewClockWidget(ctx context.Context, wg *sync.WaitGroup, digitRes map[rune]f
 	cw.rebuildLayout()
 
 	// Update loop
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 		for {
@@ -113,7 +111,7 @@ func NewClockWidget(ctx context.Context, wg *sync.WaitGroup, digitRes map[rune]f
 				cw.update()
 			}
 		}
-	}()
+	})
 	return cw
 }
 
@@ -125,7 +123,7 @@ func (cw *ClockWidget) UpdateSettings(mode24h, showSeconds bool) {
 
 func (cw *ClockWidget) UpdateResources(digitRes map[rune]fyne.Resource, sepRes fyne.Resource) {
 	cw.digitRes = digitRes
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		cw.seps[i].SetResource(sepRes)
 	}
 }

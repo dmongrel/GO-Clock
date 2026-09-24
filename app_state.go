@@ -377,9 +377,7 @@ func (s *AppState) setupAudio() {
 
 // RunAlarmChecker starts a background task to check for alarm trigger time.
 func (s *AppState) RunAlarmChecker(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		lastTriggeredMinute := -1
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
@@ -409,14 +407,12 @@ func (s *AppState) RunAlarmChecker(ctx context.Context, wg *sync.WaitGroup) {
 				}
 			}
 		}
-	}()
+	})
 }
 
 // RunLayoutFixer starts a background task to ensure the UI layout remains correct.
 func (s *AppState) RunLayoutFixer(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		var wasMinimized bool
 		var currentSize fyne.Size
 		var lastSize fyne.Size
@@ -446,7 +442,7 @@ func (s *AppState) RunLayoutFixer(ctx context.Context, wg *sync.WaitGroup) {
 				time.Sleep(50 * time.Millisecond)
 			}
 		}
-	}()
+	})
 }
 
 // CreateMainLayout constructs the main application UI layout.
