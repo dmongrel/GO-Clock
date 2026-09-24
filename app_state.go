@@ -385,6 +385,26 @@ func (s *AppState) setupAudio() {
 	s.Wg.Wait()
 }
 
+// alarmDue reports whether an alarm set for alarmTime ("15:04") should sound at
+// now, given lastTriggered - the minute at which it last sounded, or -1 for
+// none. It also returns the value lastTriggered should take next, which is how
+// a single alarm is prevented from sounding repeatedly within its own minute.
+//
+// An unparseable alarmTime is not due and leaves lastTriggered alone.
+func alarmDue(now time.Time, alarmTime string, lastTriggered int) (due bool, nextLastTriggered int) {
+	t, err := time.Parse("15:04", alarmTime)
+	if err != nil {
+		return false, lastTriggered
+	}
+	if now.Hour() != t.Hour() || now.Minute() != t.Minute() {
+		return false, -1
+	}
+	if lastTriggered == now.Minute() {
+		return false, lastTriggered
+	}
+	return true, now.Minute()
+}
+
 // RunAlarmChecker starts a background task to check for alarm trigger time.
 func (s *AppState) RunAlarmChecker(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Go(func() {
@@ -400,20 +420,10 @@ func (s *AppState) RunAlarmChecker(ctx context.Context, wg *sync.WaitGroup) {
 					continue
 				}
 
-				now := time.Now()
-				// Parse alarm time
-				t, err := time.Parse("15:04", s.Cfg.Alarm.Time)
-				if err != nil {
-					continue
-				}
-
-				if now.Hour() == t.Hour() && now.Minute() == t.Minute() {
-					if lastTriggeredMinute != now.Minute() {
-						s.PlayAlarm()
-						lastTriggeredMinute = now.Minute()
-					}
-				} else {
-					lastTriggeredMinute = -1
+				due, next := alarmDue(time.Now(), s.Cfg.Alarm.Time, lastTriggeredMinute)
+				lastTriggeredMinute = next
+				if due {
+					s.PlayAlarm()
 				}
 			}
 		}
