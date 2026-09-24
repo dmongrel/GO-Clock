@@ -153,6 +153,7 @@ func (s *AppState) RefreshResources() {
 	alarmData, err := assetFS.ReadFile("images/alarm-clock.svg")
 	if err != nil {
 		ui.ShowFatalError(s.App, "Failed to load alarm-clock.svg: "+err.Error())
+		return
 	}
 	newAlarmData := bytes.ReplaceAll(alarmData, []byte("#349beb"), []byte(s.Cfg.Color.Digits))
 	s.AlarmResource = fyne.NewStaticResource("alarm-clock.svg", newAlarmData)
@@ -280,9 +281,9 @@ func (s *AppState) LoadAlarmData() {
 	var err error
 
 	if s.Cfg.Alarm.IsUser {
-		alarmsDir, err := config.GetAlarmsDir()
-		if err != nil {
-			ui.ShowError(s.App, "Error getting alarms directory: "+err.Error())
+		alarmsDir, dirErr := config.GetAlarmsDir()
+		if dirErr != nil {
+			ui.ShowError(s.App, "Error getting alarms directory: "+dirErr.Error())
 			return
 		}
 		data, err = os.ReadFile(filepath.Join(alarmsDir, s.Cfg.Alarm.SoundFile))
@@ -366,12 +367,21 @@ func (s *AppState) StopAlarm() {
 	}
 }
 
+// Snooze silences a ringing alarm and schedules it to sound again after the
+// configured snooze interval. It does nothing when no alarm is playing.
+func (s *AppState) Snooze() {
+	if !s.IsAlarmPlaying {
+		return
+	}
+	s.StopAlarm()
+	s.SnoozeTimer = time.AfterFunc(time.Duration(s.Cfg.Alarm.SnoozeMinutes)*time.Minute, s.PlayAlarm)
+}
+
 // setupAudio initializes the audio system and loads necessary resources concurrently.
 func (s *AppState) setupAudio() {
-	s.Wg.Add(3)
-	go func() { defer s.Wg.Done(); ui.InitAudio() }()
-	go func() { defer s.Wg.Done(); s.RefreshResources() }()
-	go func() { defer s.Wg.Done(); s.LoadAlarmData() }()
+	s.Wg.Go(ui.InitAudio)
+	s.Wg.Go(s.RefreshResources)
+	s.Wg.Go(s.LoadAlarmData)
 	s.Wg.Wait()
 }
 
@@ -455,14 +465,7 @@ func (s *AppState) CreateMainLayout(sidebar fyne.CanvasObject) fyne.CanvasObject
 		s.AlarmIcon,
 	)
 
-	snoozeButton := widget.NewButton("Snooze ("+fmt.Sprintf("%d", s.Cfg.Alarm.SnoozeMinutes)+"m)", func() {
-		if s.IsAlarmPlaying {
-			s.StopAlarm()
-			s.SnoozeTimer = time.AfterFunc(time.Duration(s.Cfg.Alarm.SnoozeMinutes)*time.Minute, func() {
-				s.PlayAlarm()
-			})
-		}
-	})
+	snoozeButton := widget.NewButton("Snooze ("+fmt.Sprintf("%d", s.Cfg.Alarm.SnoozeMinutes)+"m)", s.Snooze)
 
 	// Clock with black background
 	bgColor, err := utils.ParseHexColor(s.Cfg.Color.Background)

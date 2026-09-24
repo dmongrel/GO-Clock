@@ -83,10 +83,6 @@ func main() {
 		s.OnExit()
 	})
 
-	// ... rest of main ...
-	// Note: I will need to update the saveConfig function to also trigger updates if needed,
-	// but the `onConfigChanged` callback in settings dialog will handle it.
-
 	s.ClockContainer = clock.NewClockWidget(ctx, wg, s.DigitResources, s.SepResource, cfg.Clock.Mode24h, cfg.Clock.ShowSeconds, s.AmPmLabel, s.Indicator24)
 
 	s.AlarmIcon = ui.NewSizedIcon(s.AlarmResource, 30, 30) // Alarm Icon
@@ -107,7 +103,7 @@ func main() {
 	// SPACE key for snooze
 	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
 		if k.Name == fyne.KeySpace {
-			// Handle snooze
+			s.Snooze()
 		}
 	})
 
