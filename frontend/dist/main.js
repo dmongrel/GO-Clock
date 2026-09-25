@@ -1,45 +1,53 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-// Scaffold diagnostics. Task B2 replaces this with the ClockService binding.
-// Until the runtime is confirmed working, this reports what the page can
-// actually see rather than asserting one global and hoping.
+// Task B2: prove the config binding end to end. The clock face itself arrives
+// in B3 (tick) and B4 (SVG digits); this only reads the real config through the
+// generated bindings and shows it, so a wrong value here is a wiring fault
+// rather than a rendering one.
+
+import * as ClockService from "./bindings/GO-Clock/clockservice.js";
+import { Events } from "/wails/runtime.js";
 
 const out = document.getElementById("shell-check");
 
-function line(text) {
-  const p = document.createElement("p");
-  p.textContent = text;
-  out.append(p);
+function render(cfg) {
+  out.textContent = "";
+  const rows = [
+    ["24 hour", cfg.Clock.Mode24h],
+    ["show seconds", cfg.Clock.ShowSeconds],
+    ["digits", cfg.Color.Digits],
+    ["background", cfg.Color.Background],
+    ["sidebar", cfg.Color.Sidebar],
+    ["alarm enabled", cfg.Alarm.Enabled],
+    ["alarm time", cfg.Alarm.Time || "(unset)"],
+    ["snooze minutes", cfg.Alarm.SnoozeMinutes],
+    ["sound file", cfg.Alarm.SoundFile || "(unset)"],
+  ];
+  for (const [label, value] of rows) {
+    const p = document.createElement("p");
+    p.textContent = label + ": " + value;
+    out.append(p);
+  }
+
+  // Colours are applied as CSS variables rather than inline styles, which is
+  // the seam B4's SVG digits use: a colour change becomes a variable
+  // assignment with no Go round trip.
+  const root = document.documentElement.style;
+  root.setProperty("--bg", cfg.Color.Background);
+  root.setProperty("--digit-color", cfg.Color.Digits);
+  root.setProperty("--sidebar", cfg.Color.Sidebar);
 }
 
-out.textContent = "";
-line("build B1-diag-4  <-- if you see this line, main.js ran");
+async function load() {
+  try {
+    render(await ClockService.GetConfig());
+  } catch (err) {
+    out.textContent = "GetConfig failed: " + err;
+  }
+}
 
-const wailsGlobals = Object.keys(window).filter((k) =>
-  k.toLowerCase().includes("wail"),
-);
-line(
-  wailsGlobals.length
-    ? "globals: " + wailsGlobals.join(", ")
-    : "globals: none matching 'wail'",
-);
+// Re-read on any write, including one this window did not make.
+Events.On("config:changed", load);
 
-line("window._wails: " + typeof window._wails);
-line("chrome.webview: " + typeof window.chrome?.webview);
-
-fetch("/wails/runtime.js")
-  .then((r) => {
-    line("fetch /wails/runtime.js: " + r.status + " " + r.headers.get("content-type"));
-    return r.text();
-  })
-  .then((body) => {
-    line("runtime.js bytes: " + body.length);
-  })
-  .catch((err) => {
-    line("fetch /wails/runtime.js failed: " + err);
-  });
-
-window.addEventListener("error", (e) => {
-  line("script error: " + e.message);
-});
+load();

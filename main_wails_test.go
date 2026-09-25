@@ -28,8 +28,10 @@ func TestFrontendAssetsServed(t *testing.T) {
 		{"/", "<title>Clock</title>"},
 		{"/index.html", "<title>Clock</title>"},
 		{"/style.css", "--digit-color"},
-		{"/main.js", "_wails"},
+		{"/main.js", "ClockService"},
 		{"/wails/runtime.js", "window._wails"},
+		{"/bindings/GO-Clock/clockservice.js", "export function GetConfig"},
+		{"/bindings/GO-Clock/config/models.js", "Config"},
 	}
 
 	for _, tt := range tests {

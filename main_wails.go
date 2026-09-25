@@ -20,9 +20,14 @@ import (
 var frontendAssets embed.FS
 
 func main() {
+	clock := &ClockService{}
+
 	app := application.New(application.Options{
 		Name:        "Go-Clock",
 		Description: "A clock",
+		Services: []application.Service{
+			application.NewService(clock),
+		},
 		Assets: application.AssetOptions{
 			// BundledAssetFileServer, not AssetFileServerFS: only the bundled
 			// one also serves the runtime at /wails/runtime.js, which
@@ -31,6 +36,11 @@ func main() {
 			Handler: application.BundledAssetFileServer(frontendAssets),
 		},
 	})
+
+	clock.app = app
+	if err := clock.load(); err != nil {
+		log.Fatalf("loading config: %v", err)
+	}
 
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            "Clock",
