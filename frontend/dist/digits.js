@@ -16,6 +16,13 @@ const SEPARATOR_WIDTH = 45;
 const CELL_HEIGHT = 200;
 const STROKE_WIDTH = 15;
 
+// The round stroke caps reach the full width of a cell - segment F starts at
+// x=7.5 with a 15-wide round cap, so its ink begins at 0, and segment B's ends
+// at 100 - which left adjacent digits touching. This separates them. The face
+// renders at roughly one unit per pixel in both layouts, so the gap reads as
+// about 3px on screen.
+const CELL_GAP = 3;
+
 // Segments A-G, in the order the Go code numbered them 0-6.
 const SEGMENTS = [
   { x1: 19.5, y1: 12.5, x2: 80.5, y2: 12.5 },  // A - top
@@ -62,13 +69,10 @@ function el(name, attrs) {
  * @returns {{svg: SVGSVGElement, setTime: (digits: string) => void}}
  */
 export function buildFace(showSeconds) {
+  // HH : MM, plus SS behind a second separator.
   const digitCount = showSeconds ? 6 : 4;
-  // HH : MM ( : SS ), so a separator after every pair but the last.
-  const separatorCount = showSeconds ? 2 : 1;
-  const width = digitCount * DIGIT_WIDTH + separatorCount * SEPARATOR_WIDTH;
 
   const svg = el("svg", {
-    viewBox: `0 0 ${width} ${CELL_HEIGHT}`,
     class: "face-svg",
     role: "img",
     "aria-label": "clock face",
@@ -95,7 +99,7 @@ export function buildFace(showSeconds) {
     for (const segment of segments) group.appendChild(segment);
     svg.appendChild(group);
     segmentsByDigit.push(segments);
-    x += DIGIT_WIDTH;
+    x += DIGIT_WIDTH + CELL_GAP;
 
     // After the second and, with seconds shown, the fourth digit.
     if (i % 2 === 1 && i < digitCount - 1) {
@@ -103,9 +107,13 @@ export function buildFace(showSeconds) {
       colon.appendChild(el("circle", { cx: 22.5, cy: 60, r: 15 }));
       colon.appendChild(el("circle", { cx: 22.5, cy: 140, r: 15 }));
       svg.appendChild(colon);
-      x += SEPARATOR_WIDTH;
+      x += SEPARATOR_WIDTH + CELL_GAP;
     }
   }
+
+  // x carries a trailing gap that belongs to no cell, so the viewBox is set
+  // from the ink rather than from the cursor.
+  svg.setAttribute("viewBox", `0 0 ${x - CELL_GAP} ${CELL_HEIGHT}`);
 
   /**
    * Light the segments for a run of digit characters, e.g. "0930".
