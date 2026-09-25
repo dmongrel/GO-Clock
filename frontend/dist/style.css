@@ -16,8 +16,16 @@
      a dim ghost without touching the geometry. */
   --unlit: var(--bg);
 
-  --sidebar-fg: #101010;
-  --border: #808080;
+  /* The chrome - buttons, labels, icons, dialogs - is dark, matching the Fyne
+     theme the app has always run. Only the three colours above are
+     configurable; these are the frame they sit in, and painting them light
+     made every control read as the wrong colour even though the configured
+     three were right. */
+  --chrome-bg: #171717;
+  --chrome-raised: #282828;
+  --chrome-hover: #313131;
+  --chrome-fg: #ffffff;
+  --border: #3d3d3d;
   --sidebar-width: 150px;
 }
 
@@ -122,7 +130,7 @@ body {
    on black. The alarm clock is recoloured in Go instead, because its colour
    lives in an internal stylesheet. */
 .icon-button svg path {
-  fill: var(--sidebar-fg);
+  fill: var(--chrome-fg);
 }
 
 /* While the alarm is sounding the icon pulses. It is the only motion in the
@@ -150,8 +158,8 @@ body.ringing #alarm-icon {
   padding: 6px;
   border: 0;
   border-top: 1px solid var(--border);
-  background: var(--sidebar);
-  color: var(--sidebar-fg);
+  background: var(--chrome-raised);
+  color: var(--chrome-fg);
   font: inherit;
 }
 
@@ -162,7 +170,7 @@ body.ringing #alarm-icon {
   gap: 8px;
   padding: 8px;
   background: var(--sidebar);
-  color: var(--sidebar-fg);
+  color: var(--chrome-fg);
   font-size: 14px;
 }
 
@@ -178,8 +186,8 @@ dialog select {
   padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: 3px;
-  background: #f0f0f0;
-  color: #101010;
+  background: var(--chrome-raised);
+  color: var(--chrome-fg);
   font: inherit;
 }
 
@@ -190,7 +198,7 @@ dialog select {
 }
 
 button:hover {
-  filter: brightness(0.92);
+  background: var(--chrome-hover);
 }
 
 /* Dialogs ---------------------------------------------------------------- */
@@ -200,8 +208,8 @@ dialog {
   max-height: 96vh;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: #fafafa;
-  color: #101010;
+  background: var(--chrome-bg);
+  color: var(--chrome-fg);
   font-size: 14px;
 }
 
@@ -267,8 +275,13 @@ dialog h3 {
   cursor: pointer;
 }
 
+#sound-list li:hover {
+  background: var(--chrome-raised);
+}
+
 #sound-list li[aria-selected="true"] {
-  background: #cfe4ff;
+  background: var(--chrome-hover);
+  color: var(--digit-color);
 }
 
 /* Imported sounds are marked rather than pushed below a separator row, which is
