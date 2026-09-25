@@ -6,3 +6,7 @@ import * as ClockService from "./clockservice.js";
 export {
     ClockService
 };
+
+export {
+    Sound
+} from "./models.js";

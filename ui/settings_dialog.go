@@ -4,6 +4,7 @@
 package ui
 
 import (
+	"GO-Clock/audio"
 	"GO-Clock/config"
 	"GO-Clock/utils"
 	"embed"
@@ -108,7 +109,7 @@ func ShowSettingsDialog(a fyne.App, cfg *config.Config, saveConfig func(), onCon
 		if err == nil {
 			cfg.Alarm.SoundFile = selected
 			cfg.Alarm.IsUser = !isEmbedded
-			LoadSound(selected, data)
+			audio.LoadSound(selected, data)
 
 			suffix := " (user)"
 			if isEmbedded {
@@ -143,17 +144,17 @@ func ShowSettingsDialog(a fyne.App, cfg *config.Config, saveConfig func(), onCon
 		}
 
 		if err == nil {
-			LoadSound(cfg.Alarm.SoundFile, data)
+			audio.LoadSound(cfg.Alarm.SoundFile, data)
 		}
 	}
 
 	var playBtn *widget.Button
 	playBtn = widget.NewButtonWithIcon("", playResource, func() {
 		if playBtn.Icon == playResource {
-			PlaySound(cfg.Alarm.SoundFile, true)
+			audio.PlaySound(cfg.Alarm.SoundFile, true)
 			playBtn.SetIcon(stopResource)
 		} else {
-			StopSound()
+			audio.StopSound()
 			playBtn.SetIcon(playResource)
 		}
 	})

@@ -1,26 +1,65 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build wails
+//go:build !fyne
 
-// Wails v3 entry point, built with -tags wails. The Fyne entry point in
-// main.go carries the opposite tag, so exactly one main exists in any build.
-// Both remain until the migration's cutover task, which deletes the Fyne one
-// and drops this tag.
+// Wails v3 entry point, the default build. The superseded Fyne entry point in
+// main.go carries the opposite tag and is kept, buildable with -tags fyne, as
+// a reference for the feature set this one replaces.
 package main
 
 import (
 	"embed"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
+	"github.com/gofrs/flock"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 //go:embed all:frontend/dist
 var frontendAssets embed.FS
 
+// The two window widths the clock uses: narrow for HH:MM, wide for HH:MM:SS.
+// Carried over from the Fyne build unchanged.
+const (
+	windowWidth            = 658
+	windowWidthWithSeconds = 915
+	windowHeight           = 240
+)
+
 func main() {
+	// Instance locking, ported unchanged from the Fyne build. A second copy of
+	// a clock is never what anyone wanted, and a second copy of an alarm is
+	// actively wrong.
+	configDir, err := os.UserConfigDir()
+	if err == nil {
+		lockDir := filepath.Join(configDir, "Go-Clock")
+		os.MkdirAll(lockDir, 0755)
+		lockPath := filepath.Join(lockDir, "Go-Clock.lock")
+		fileLock := flock.New(lockPath)
+
+		locked, err := fileLock.TryLock()
+		if err != nil {
+			log.Fatalf("Error trying to acquire lock: %v", err)
+		}
+		if !locked {
+			fmt.Println("Another instance of this application is already running. Exiting...")
+			os.Exit(0)
+		}
+		defer func() {
+			fileLock.Unlock()
+			os.Remove(lockPath)
+		}()
+	}
+
 	clock := &ClockService{}
+
+	// Closed on shutdown to stop the alarm checker. A channel rather than a
+	// context because nothing here carries deadlines or values.
+	done := make(chan struct{})
 
 	app := application.New(application.Options{
 		Name:        "Go-Clock",
@@ -35,6 +74,16 @@ func main() {
 			// events reach the frontend.
 			Handler: application.BundledAssetFileServer(frontendAssets),
 		},
+		// SPACE snoozes from anywhere in the window, including while the
+		// webview has focus, which is where a frontend key handler alone would
+		// leave gaps.
+		KeyBindings: map[string]func(window application.Window){
+			"space": func(application.Window) { clock.Snooze() },
+		},
+		OnShutdown: func() {
+			close(done)
+			clock.StopAlarm()
+		},
 	})
 
 	clock.app = app
@@ -42,12 +91,23 @@ func main() {
 		log.Fatalf("loading config: %v", err)
 	}
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:            "Clock",
-		Width:            658,
-		Height:           240,
+	cfg := clock.GetConfig()
+	width := windowWidth
+	if cfg.Clock.ShowSeconds {
+		width = windowWidthWithSeconds
+	}
+
+	clock.win = app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Title:  "Clock",
+		Width:  width,
+		Height: windowHeight,
+		// The frontend paints the background from the configured colour; this
+		// only stops a white flash before the first paint.
 		BackgroundColour: application.NewRGB(0, 0, 0),
 	})
+	clock.win.Center()
+
+	clock.runAlarmChecker(done)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

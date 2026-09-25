@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !wails
+//go:build fyne
 
-// Fyne entry point, the default build. The Wails v3 entry point in
-// main_wails.go carries the opposite tag. Both remain until the migration's
-// cutover task.
+// The superseded Fyne entry point, kept as a reference for the feature set the
+// Wails build replaces. Build it with -tags fyne; the default build is Wails.
 package main
 
 import (

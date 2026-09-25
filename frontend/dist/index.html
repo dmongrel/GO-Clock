@@ -7,16 +7,105 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main id="app">
-    <!-- Deliberately worded as a failure: main.js clears this on load, so if
-         you can still read it, main.js did not run. -->
-    <p id="shell-check">main.js did not run.</p>
-  </main>
+  <div id="shell">
+    <div id="left">
+      <div id="clock-area">
+        <div id="face"></div>
+        <div id="extras">
+          <span id="ampm" class="readout">AM</span>
+          <span id="indicator24" class="readout">24H</span>
+          <span id="timezone" class="readout"></span>
+          <span id="alarm-icon" class="icon" title="Alarm set"></span>
+        </div>
+      </div>
+      <button id="snooze" type="button">Snooze</button>
+    </div>
+
+    <div id="sidebar">
+      <label><input type="checkbox" id="mode24h" /> 24-Hour Mode</label>
+      <label><input type="checkbox" id="showSeconds" /> Show Seconds</label>
+      <label><input type="checkbox" id="alarmEnabled" /> Alarm Enabled</label>
+      <button id="setAlarm" type="button">Set Alarm</button>
+      <button id="openSettings" class="icon-button" type="button" title="Settings"></button>
+    </div>
+  </div>
+
+  <!-- Both dialogs are native <dialog> elements: the platform gives the modal
+       backdrop, focus trapping and Escape-to-close, which the Fyne build needed
+       a second window for. -->
+  <dialog id="alarm-dialog">
+    <form method="dialog">
+      <h2>Set Alarm</h2>
+      <p class="field-label">Select Alarm Time</p>
+      <div class="time-row">
+        <select id="alarm-hour" aria-label="hour"></select>
+        <span>:</span>
+        <select id="alarm-minute" aria-label="minute"></select>
+        <select id="alarm-ampm" aria-label="AM or PM">
+          <option>AM</option>
+          <option>PM</option>
+        </select>
+      </div>
+      <p class="field-label">Select Snooze Time</p>
+      <select id="alarm-snooze" aria-label="snooze minutes">
+        <option>5</option>
+        <option>10</option>
+        <option>15</option>
+        <option>30</option>
+        <option>60</option>
+      </select>
+      <div class="dialog-buttons">
+        <button id="alarm-save" value="save" type="submit">Save</button>
+        <button value="cancel" type="submit" formnovalidate>Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <h2>Settings</h2>
+    <div class="settings-grid">
+      <section class="sounds">
+        <p id="selected-sound" class="bordered">Selected: No Alarm Selected</p>
+        <ul id="sound-list" class="bordered"></ul>
+        <div class="sound-buttons">
+          <button id="sound-refresh" class="icon-button" type="button" title="Refresh"></button>
+          <button id="sound-import" class="icon-button" type="button" title="Add a sound"></button>
+          <button id="sound-play" class="icon-button" type="button" title="Play"></button>
+        </div>
+      </section>
+
+      <section class="colours">
+        <h3>Colors</h3>
+        <button class="colour-target" type="button" data-target="Background">Background Color</button>
+        <button class="colour-target" type="button" data-target="Digits">Digits Color</button>
+        <button class="colour-target" type="button" data-target="Sidebar">Sidebar Color</button>
+        <div id="colour-editor" hidden>
+          <p id="colour-current-label">Current Color</p>
+          <span id="colour-current" class="swatch"></span>
+          <p id="colour-new-label">New Color</p>
+          <input type="color" id="colour-input" aria-label="new colour" />
+          <div class="dialog-buttons">
+            <button id="colour-default" type="button">Default</button>
+            <button id="colour-revert" type="button">Revert</button>
+            <button id="colour-apply" type="button">Apply</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="dialog-buttons">
+      <button id="settings-close" type="button">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Deliberately worded as a failure: main.js clears this on load, so if you
+       can still read it, main.js did not run. -->
+  <p id="shell-check">main.js did not run.</p>
+
   <!-- type="module" is required, not optional: a dev build serves
        runtime.debug.js, which ends in an export statement and throws
        "Unexpected token 'export'" in a classic script tag, leaving
-       window._wails undefined. The production runtime is a plain IIFE and
-       loads either way, so module is the form that works for both. -->
+       window._wails undefined. The production runtime is a plain IIFE and loads
+       either way, so module is the form that works for both. -->
   <script type="module" src="/wails/runtime.js"></script>
   <script type="module" src="main.js"></script>
 </body>

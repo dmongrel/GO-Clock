@@ -18,7 +18,14 @@ before:
 builds:
   - main: ./...
     env:
-      - CGO_ENABLED=1
+      # The Wails build needs no C compiler: the webview is reached through
+      # syscalls, and the toolkit that needed cgo was Fyne.
+      - CGO_ENABLED=0
+    # The default build is Wails; the superseded Fyne entry point is behind the
+    # fyne tag and is deliberately not released. production swaps the bundled
+    # Wails runtime for the small one and drops the devtools.
+    tags:
+      - production
     ldflags:
       - -H=windowsgui
     goos:

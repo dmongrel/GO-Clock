@@ -1,16 +1,18 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build fyne
+
 package main
 
 import (
+	"GO-Clock/audio"
 	"GO-Clock/clock"
 	"GO-Clock/config"
 	"GO-Clock/ui"
 	"GO-Clock/utils"
 	"bytes"
 	"context"
-	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -23,10 +25,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
-
-//go:embed images/*.svg
-//go:embed alarms/*.mp3
-var assetFS embed.FS
 
 // AppState holds the global application state, configuration, and UI components.
 // It provides methods for managing resources, audio, and application lifecycle.
@@ -296,7 +294,7 @@ func (s *AppState) LoadAlarmData() {
 		return
 	}
 	s.CurrentAlarmData = data
-	if err := ui.LoadSound(s.Cfg.Alarm.SoundFile, s.CurrentAlarmData); err != nil {
+	if err := audio.LoadSound(s.Cfg.Alarm.SoundFile, s.CurrentAlarmData); err != nil {
 		ui.ShowError(s.App, "Error loading alarm sound: "+err.Error())
 	}
 }
@@ -350,7 +348,7 @@ func (s *AppState) OnConfigChanged() {
 // PlayAlarm initiates the alarm sound playback.
 func (s *AppState) PlayAlarm() {
 	if !s.IsAlarmPlaying && s.CurrentAlarmData != nil {
-		ui.PlaySound(s.Cfg.Alarm.SoundFile, true)
+		audio.PlaySound(s.Cfg.Alarm.SoundFile, true)
 		s.IsAlarmPlaying = true
 	}
 }
@@ -358,7 +356,7 @@ func (s *AppState) PlayAlarm() {
 // StopAlarm terminates the alarm sound playback and cancels any active snooze.
 func (s *AppState) StopAlarm() {
 	if s.IsAlarmPlaying {
-		ui.StopSound()
+		audio.StopSound()
 		s.IsAlarmPlaying = false
 	}
 	if s.SnoozeTimer != nil {
@@ -379,30 +377,10 @@ func (s *AppState) Snooze() {
 
 // setupAudio initializes the audio system and loads necessary resources concurrently.
 func (s *AppState) setupAudio() {
-	s.Wg.Go(ui.InitAudio)
+	s.Wg.Go(audio.InitAudio)
 	s.Wg.Go(s.RefreshResources)
 	s.Wg.Go(s.LoadAlarmData)
 	s.Wg.Wait()
-}
-
-// alarmDue reports whether an alarm set for alarmTime ("15:04") should sound at
-// now, given lastTriggered - the minute at which it last sounded, or -1 for
-// none. It also returns the value lastTriggered should take next, which is how
-// a single alarm is prevented from sounding repeatedly within its own minute.
-//
-// An unparseable alarmTime is not due and leaves lastTriggered alone.
-func alarmDue(now time.Time, alarmTime string, lastTriggered int) (due bool, nextLastTriggered int) {
-	t, err := time.Parse("15:04", alarmTime)
-	if err != nil {
-		return false, lastTriggered
-	}
-	if now.Hour() != t.Hour() || now.Minute() != t.Minute() {
-		return false, -1
-	}
-	if lastTriggered == now.Minute() {
-		return false, lastTriggered
-	}
-	return true, now.Minute()
 }
 
 // RunAlarmChecker starts a background task to check for alarm trigger time.

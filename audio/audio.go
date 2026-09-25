@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-package ui
+// Package audio plays the alarm. It is deliberately free of any UI toolkit: it
+// was part of the Fyne ui package, which meant the Wails build linked Fyne in
+// order to make a sound.
+package audio
 
 import (
 	"bytes"
