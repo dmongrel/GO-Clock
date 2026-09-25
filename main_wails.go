@@ -24,7 +24,11 @@ func main() {
 		Name:        "Go-Clock",
 		Description: "A clock",
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(frontendAssets),
+			// BundledAssetFileServer, not AssetFileServerFS: only the bundled
+			// one also serves the runtime at /wails/runtime.js, which
+			// index.html loads. Without it the page renders but no bindings or
+			// events reach the frontend.
+			Handler: application.BundledAssetFileServer(frontendAssets),
 		},
 	})
 

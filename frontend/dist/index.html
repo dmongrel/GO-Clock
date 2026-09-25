@@ -8,8 +8,16 @@
 </head>
 <body>
   <main id="app">
-    <p id="shell-check">Wails shell is up.</p>
+    <!-- Deliberately worded as a failure: main.js clears this on load, so if
+         you can still read it, main.js did not run. -->
+    <p id="shell-check">main.js did not run.</p>
   </main>
+  <!-- type="module" is required, not optional: a dev build serves
+       runtime.debug.js, which ends in an export statement and throws
+       "Unexpected token 'export'" in a classic script tag, leaving
+       window._wails undefined. The production runtime is a plain IIFE and
+       loads either way, so module is the form that works for both. -->
+  <script type="module" src="/wails/runtime.js"></script>
   <script type="module" src="main.js"></script>
 </body>
 </html>
