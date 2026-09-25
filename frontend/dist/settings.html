@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="dialog-window">
+  <main id="settings">
+    <section class="sounds">
+      <h3>Alarm sound</h3>
+      <p id="selected-sound" class="bordered">Selected: No Alarm Selected</p>
+      <ul id="sound-list" class="bordered"></ul>
+      <div class="sound-buttons">
+        <button id="sound-refresh" class="icon-button" type="button" title="Refresh"></button>
+        <button id="sound-import" class="icon-button" type="button" title="Add a sound"></button>
+        <button id="sound-play" class="icon-button" type="button" title="Play"></button>
+      </div>
+    </section>
+
+    <section class="colours">
+      <h3>Colors</h3>
+      <button class="colour-target" type="button" data-target="Background">Background</button>
+      <button class="colour-target" type="button" data-target="Digits">Digits</button>
+      <button class="colour-target" type="button" data-target="Sidebar">Sidebar</button>
+      <div id="colour-editor" hidden>
+        <p id="colour-label">Color</p>
+        <div class="swatch-row">
+          <span id="colour-current" class="swatch" title="current"></span>
+          <input type="color" id="colour-input" aria-label="new colour" />
+        </div>
+        <div class="dialog-buttons">
+          <button id="colour-default" type="button">Default</button>
+          <button id="colour-revert" type="button">Revert</button>
+          <button id="colour-apply" type="button">Apply</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="dialog-buttons window-footer">
+    <button id="settings-close" type="button">Close</button>
+  </div>
+
+  <script type="module" src="/wails/runtime.js"></script>
+  <script type="module" src="settingswindow.js"></script>
+</body>
+</html>

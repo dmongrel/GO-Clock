@@ -11,8 +11,8 @@
 import * as ClockService from "./bindings/GO-Clock/clockservice.js";
 import { Events } from "/wails/runtime.js";
 import { startClock } from "./clock.js";
-import { createAlarmDialog, formatAlarmTime } from "./alarmdialog.js";
-import { createSettingsDialog, setIcon } from "./settings.js";
+import { formatAlarmTime } from "./alarmtime.js";
+import { applyColours, setIcon } from "./theme.js";
 import { attempt, showError } from "./errors.js";
 
 const ui = {
@@ -47,24 +47,9 @@ async function save(mutate) {
   await attempt("Could not save the settings.", () => ClockService.SetConfig(next));
 }
 
-const alarmDialog = createAlarmDialog(({ time, snoozeMinutes }) => {
-  void save((cfg) => {
-    cfg.Alarm.Time = time;
-    cfg.Alarm.SnoozeMinutes = snoozeMinutes;
-  });
-});
-
-const settingsDialog = createSettingsDialog({
-  getConfig: () => config,
-  save,
-});
-
 /** Paint everything that follows the config. */
 function render() {
-  const root = document.documentElement.style;
-  root.setProperty("--bg", config.Color.Background);
-  root.setProperty("--digit-color", config.Color.Digits);
-  root.setProperty("--sidebar", config.Color.Sidebar);
+  applyColours(config);
 
   clock.setSettings(config.Clock.Mode24h, config.Clock.ShowSeconds);
 
@@ -112,8 +97,10 @@ ui.alarmEnabled.addEventListener("change", () => {
   });
 });
 
-ui.setAlarm.addEventListener("click", () => alarmDialog.open(config));
-ui.openSettings.addEventListener("click", () => settingsDialog.open());
+// Both are separate windows, opened by Go. A modal inside this one would have
+// 240px of height to work with.
+ui.setAlarm.addEventListener("click", () => ClockService.OpenAlarmDialog());
+ui.openSettings.addEventListener("click", () => ClockService.OpenSettings());
 ui.snooze.addEventListener("click", () => ClockService.Snooze());
 
 // SPACE snoozes. Go also binds it application-wide, which covers the case where

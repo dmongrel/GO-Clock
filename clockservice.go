@@ -35,6 +35,15 @@ const (
 	EventAlarmStop = "alarm:stop"
 )
 
+// Window names. The frontend asks for a window by name and Go looks it up in
+// the window manager rather than holding a reference, so a window the user
+// closed with its own close button cannot leave a stale pointer behind.
+const (
+	windowMain     = "main"
+	windowSettings = "settings"
+	windowAlarm    = "alarm"
+)
+
 // Sound is one selectable alarm sound. IsUser separates the sounds bundled into
 // the binary from the ones that have been imported, which is the distinction
 // deciding where the bytes are read from.
@@ -176,6 +185,43 @@ func (c *ClockService) applyWindowSize(cfg config.Config) {
 		return
 	}
 	c.win.SetSize(windowWidth, windowHeight)
+}
+
+// OpenSettings shows the settings window, or focuses it if it is already open.
+//
+// Settings is a real window rather than a modal inside the clock: the clock
+// window is 240px tall, so anything drawn inside it has 240px to work with.
+func (c *ClockService) OpenSettings() {
+	c.openDialogWindow(windowSettings, "Settings", "/settings.html", 300, 300)
+}
+
+// OpenAlarmDialog shows the Set Alarm window, or focuses it if already open.
+func (c *ClockService) OpenAlarmDialog() {
+	c.openDialogWindow(windowAlarm, "Set Alarm", "/alarm.html", 300, 300)
+}
+
+// CloseWindow closes a named window. The frontend calls it from a dialog's own
+// close button, so the dialog does not need the runtime's window API.
+func (c *ClockService) CloseWindow(name string) {
+	if win, ok := c.app.Window.GetByName(name); ok {
+		win.Close()
+	}
+}
+
+func (c *ClockService) openDialogWindow(name, title, url string, width, height int) {
+	if win, ok := c.app.Window.GetByName(name); ok {
+		win.Focus()
+		return
+	}
+	c.app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:   name,
+		Title:  title,
+		URL:    url,
+		Width:  width,
+		Height: height,
+		// The chrome colour, so there is no white flash before the first paint.
+		BackgroundColour: application.NewRGB(23, 23, 23),
+	})
 }
 
 // Timezone returns the abbreviation the clock displays, e.g. "MST". The

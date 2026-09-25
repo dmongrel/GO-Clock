@@ -181,8 +181,8 @@ body.ringing #alarm-icon {
 }
 
 #sidebar button,
-dialog button,
-dialog select {
+.dialog-window button,
+.dialog-window select {
   padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: 3px;
@@ -201,34 +201,52 @@ button:hover {
   background: var(--chrome-hover);
 }
 
-/* Dialogs ---------------------------------------------------------------- */
+/* Dialog windows ---------------------------------------------------------- */
 
-dialog {
-  max-width: 96vw;
-  max-height: 96vh;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+/* Settings and Set Alarm are separate OS windows, not modals: this window is
+   240px tall, and a modal inside it would have 240px to lay out in. They share
+   this stylesheet, so they share the chrome. */
+
+.dialog-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   background: var(--chrome-bg);
   color: var(--chrome-fg);
-  font-size: 14px;
+  font-size: 13px;
 }
 
-dialog::backdrop {
-  background: rgb(0 0 0 / 55%);
+.dialog-window > main {
+  flex: 1;
+  min-height: 0;
+  padding: 8px;
+  overflow-y: auto;
 }
 
-dialog h2 {
-  margin: 0 0 8px;
-  font-size: 16px;
+.window-footer {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
 }
 
-dialog h3 {
+.dialog-window h3 {
   margin: 0 0 6px;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.dialog-window .colours {
+  margin-top: 12px;
 }
 
 .field-label {
   margin: 10px 0 4px;
+}
+
+.field-label:first-child {
+  margin-top: 0;
 }
 
 .time-row {
@@ -240,14 +258,11 @@ dialog h3 {
 .dialog-buttons {
   display: flex;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
-.settings-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  min-width: 520px;
+.window-footer.dialog-buttons {
+  margin-top: 0;
 }
 
 .bordered {
@@ -262,8 +277,10 @@ dialog h3 {
   text-overflow: ellipsis;
 }
 
+/* Short enough that the colour section is reachable without scrolling past a
+   long list in a 300px-tall window. */
 #sound-list {
-  height: 220px;
+  height: 92px;
   margin: 0;
   padding: 0;
   overflow-y: auto;
@@ -304,17 +321,32 @@ dialog h3 {
   gap: 6px;
 }
 
+.swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .swatch {
   display: block;
-  width: 60px;
-  height: 22px;
+  width: 44px;
+  height: 24px;
   border: 1px solid var(--border);
 }
 
 #colour-input {
-  width: 60px;
+  width: 44px;
   height: 26px;
   padding: 0;
+  background: var(--chrome-raised);
+}
+
+#colour-editor {
+  padding-top: 4px;
+}
+
+#colour-label {
+  margin: 0 0 4px;
 }
 
 #error-banner {

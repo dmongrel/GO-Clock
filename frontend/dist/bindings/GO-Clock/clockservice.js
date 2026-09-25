@@ -27,6 +27,16 @@ import * as config$0 from "./config/models.js";
 import * as $models from "./models.js";
 
 /**
+ * CloseWindow closes a named window. The frontend calls it from a dialog's own
+ * close button, so the dialog does not need the runtime's window API.
+ * @param {string} name
+ * @returns {$CancellablePromise<void>}
+ */
+export function CloseWindow(name) {
+    return $Call.ByID(2443353545, name);
+}
+
+/**
  * GetConfig returns the current configuration by value, so the frontend cannot
  * mutate the service copy through the returned object.
  * @returns {$CancellablePromise<config$0.Config>}
@@ -78,6 +88,25 @@ export function ListSounds() {
     return $Call.ByID(1151140555).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType2($result);
     }));
+}
+
+/**
+ * OpenAlarmDialog shows the Set Alarm window, or focuses it if already open.
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenAlarmDialog() {
+    return $Call.ByID(3735471796);
+}
+
+/**
+ * OpenSettings shows the settings window, or focuses it if it is already open.
+ * 
+ * Settings is a real window rather than a modal inside the clock: the clock
+ * window is 240px tall, so anything drawn inside it has 240px to work with.
+ * @returns {$CancellablePromise<void>}
+ */
+export function OpenSettings() {
+    return $Call.ByID(2572752802);
 }
 
 /**

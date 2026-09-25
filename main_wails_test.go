@@ -35,9 +35,13 @@ func TestFrontendAssetsServed(t *testing.T) {
 		{"/main.js", "ClockService"},
 		{"/clock.js", "formatDigits"},
 		{"/digits.js", "buildFace"},
-		{"/alarmdialog.js", "formatAlarmTime"},
-		{"/settings.js", "createSettingsDialog"},
+		{"/alarmtime.js", "formatAlarmTime"},
+		{"/theme.js", "applyColours"},
 		{"/errors.js", "showError"},
+		{"/settings.html", "<title>Settings</title>"},
+		{"/settingswindow.js", "ListSounds"},
+		{"/alarm.html", "<title>Set Alarm</title>"},
+		{"/alarmwindow.js", "toStoredTime"},
 		{"/wails/runtime.js", "window._wails"},
 		{"/bindings/GO-Clock/clockservice.js", "export function GetConfig"},
 		{"/bindings/GO-Clock/models.js", "Sound"},
@@ -111,6 +115,57 @@ func TestEveryFrontendImportIsServed(t *testing.T) {
 		t.Fatal("found no imports to check, so this test proved nothing")
 	}
 	t.Logf("checked %d imports across the frontend", checked)
+}
+
+// referencePattern finds the scripts and stylesheets a page pulls in.
+var referencePattern = regexp.MustCompile(`(?:src|href)="([^"]+)"`)
+
+// TestEveryPageReferenceIsServed does for the HTML pages what the test above
+// does for the modules. There are three pages now - the clock and the two
+// dialog windows - and a page whose entry script 404s opens as a blank window
+// with no other symptom.
+func TestEveryPageReferenceIsServed(t *testing.T) {
+	handler := application.BundledAssetFileServer(frontendAssets)
+
+	entries, err := frontendAssets.ReadDir("frontend/dist")
+	if err != nil {
+		t.Fatalf("reading the embedded frontend: %v", err)
+	}
+
+	pages, checked := 0, 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".html") {
+			continue
+		}
+		pages++
+		data, err := frontendAssets.ReadFile("frontend/dist/" + entry.Name())
+		if err != nil {
+			t.Fatalf("reading %s: %v", entry.Name(), err)
+		}
+
+		for _, match := range referencePattern.FindAllStringSubmatch(string(data), -1) {
+			target := match[1]
+			if strings.HasPrefix(target, "http") || strings.HasPrefix(target, "data:") {
+				continue
+			}
+			request := target
+			if !strings.HasPrefix(request, "/") {
+				request = "/" + request
+			}
+
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, request, nil))
+			if rec.Code != http.StatusOK {
+				t.Errorf("%s references %q, which the handler serves as %d", entry.Name(), target, rec.Code)
+			}
+			checked++
+		}
+	}
+
+	if pages < 3 {
+		t.Errorf("found %d pages, want the clock and both dialog windows", pages)
+	}
+	t.Logf("checked %d references across %d pages", checked, pages)
 }
 
 // TestIndexRequestsRuntime guards the other half of the wiring: the runtime can

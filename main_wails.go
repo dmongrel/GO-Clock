@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"GO-Clock/audio"
+
 	"github.com/gofrs/flock"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -87,6 +89,13 @@ func main() {
 	})
 
 	clock.app = app
+
+	// Open the audio device before anything tries to use it. beep's speaker
+	// needs this once at startup; without it PlaySound runs against a device
+	// that was never opened and the alarm fires in silence, which is the same
+	// as not firing.
+	audio.InitAudio()
+
 	if err := clock.load(); err != nil {
 		log.Fatalf("loading config: %v", err)
 	}
@@ -98,9 +107,13 @@ func main() {
 	}
 
 	clock.win = app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:   windowMain,
 		Title:  "Clock",
 		Width:  width,
 		Height: windowHeight,
+		// The face is sized for these two widths and the window is an
+		// appliance, not a document. SetSize still drives the seconds toggle.
+		DisableResize: true,
 		// The frontend paints the background from the configured colour; this
 		// only stops a white flash before the first paint.
 		BackgroundColour: application.NewRGB(0, 0, 0),
