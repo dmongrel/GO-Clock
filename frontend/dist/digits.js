@@ -20,8 +20,8 @@ const STROKE_WIDTH = 15;
 // x=7.5 with a 15-wide round cap, so its ink begins at 0, and segment B's ends
 // at 100 - which left adjacent digits touching. This separates them. The face
 // renders at roughly one unit per pixel in both layouts, so the gap reads as
-// about 3px on screen.
-const CELL_GAP = 3;
+// about this many pixels on screen.
+const CELL_GAP = 6;
 
 // Segments A-G, in the order the Go code numbered them 0-6.
 const SEGMENTS = [
