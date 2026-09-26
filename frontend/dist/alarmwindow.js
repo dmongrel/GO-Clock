@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-// The Set Alarm window, ported from ui/alarm_dialog.go.
+// The Set Alarm window, ported from the Fyne build's ui/alarm_dialog.go
+// (deleted; see the pre-wails3 tag).
 //
 // The hour list and the AM/PM control follow the 24-hour setting, exactly as
 // the Fyne version did. The stored value is always 24-hour "HH:MM", so the

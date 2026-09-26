@@ -5,10 +5,9 @@ package main
 
 import "embed"
 
-// assetFS carries the icons and the bundled alarm sounds. It lives in its own
-// untagged file because both entry points need it: the Fyne build turns the
-// SVGs into fyne.Resource values, and the Wails build hands them to the
-// frontend as markup.
+// assetFS carries the icons and the bundled alarm sounds. The icons are handed
+// to the frontend as markup, so CSS can recolour them; the sounds are decoded
+// straight into the audio buffer.
 //
 //go:embed images/*.svg
 //go:embed alarms/*.mp3

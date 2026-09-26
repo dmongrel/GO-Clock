@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-// The Settings window, ported from ui/settings_dialog.go.
+// The Settings window, ported from the Fyne build's ui/settings_dialog.go
+// (deleted; see the pre-wails3 tag).
 //
 // Two things the Fyne version needed libraries for are now the platform's job:
 // the hue-circle colour picker is an <input type="color">, and the file picker

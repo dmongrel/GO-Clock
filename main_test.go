@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !fyne
-
 package main
 
 import (
@@ -16,6 +14,8 @@ import (
 	"testing"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"GO-Clock/config"
 )
 
 // TestFrontendAssetsServed checks the embedded frontend and the Wails runtime
@@ -330,6 +330,44 @@ func TestTimezoneIsAnAbbreviation(t *testing.T) {
 	}
 	if strings.ContainsAny(zone, " :") {
 		t.Errorf("Timezone returned %q, which does not look like an abbreviation", zone)
+	}
+}
+
+// TestNormaliseFillsInAMissingSnoozeInterval covers a fresh install, where the
+// config file has no snooze value at all. A zero would make time.AfterFunc fire
+// at once, so the alarm would restart the instant it was snoozed while the
+// button read "Snooze (0m)".
+func TestNormaliseFillsInAMissingSnoozeInterval(t *testing.T) {
+	got := normalise(&config.Config{})
+	if got.Alarm.SnoozeMinutes != config.DefaultSnoozeMinutes {
+		t.Errorf("normalise left the snooze interval at %d, want %d",
+			got.Alarm.SnoozeMinutes, config.DefaultSnoozeMinutes)
+	}
+}
+
+// TestNormaliseKeepsAChosenSnoozeInterval - the default must not overwrite a
+// value the user picked.
+func TestNormaliseKeepsAChosenSnoozeInterval(t *testing.T) {
+	for _, minutes := range []int{5, 10, 15, 30, 60} {
+		cfg := &config.Config{}
+		cfg.Alarm.SnoozeMinutes = minutes
+		if got := normalise(cfg); got.Alarm.SnoozeMinutes != minutes {
+			t.Errorf("normalise changed a snooze interval of %d to %d", minutes, got.Alarm.SnoozeMinutes)
+		}
+	}
+}
+
+// TestGetConfigReportsANormalisedSnooze proves the frontend sees the effective
+// value, not the raw one - the label and the timer have to agree.
+func TestGetConfigReportsANormalisedSnooze(t *testing.T) {
+	redirectConfigDirForTest(t)
+
+	c := &ClockService{}
+	if err := c.load(); err != nil {
+		t.Fatalf("load failed: %v", err)
+	}
+	if got := c.GetConfig().Alarm.SnoozeMinutes; got != config.DefaultSnoozeMinutes {
+		t.Errorf("GetConfig reported a snooze interval of %d, want %d", got, config.DefaultSnoozeMinutes)
 	}
 }
 

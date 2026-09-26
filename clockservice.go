@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !fyne
-
 package main
 
 import (
@@ -80,6 +78,17 @@ type ClockService struct {
 	lastTriggeredMinute int
 }
 
+// normalise fills in values a config file can legitimately omit but the app
+// cannot run on. It is applied on every read and every write, so the frontend
+// and the snooze timer always see the same effective value - the label would
+// otherwise read "Snooze (0m)" while the timer refired instantly.
+func normalise(cfg *config.Config) *config.Config {
+	if cfg.Alarm.SnoozeMinutes <= 0 {
+		cfg.Alarm.SnoozeMinutes = config.DefaultSnoozeMinutes
+	}
+	return cfg
+}
+
 // load reads the config from disk and loads the configured alarm sound. It is
 // called once at startup, before the window exists, so a config failure can be
 // fatal in main rather than surfacing as an empty clock. Unexported
@@ -92,7 +101,7 @@ func (c *ClockService) load() error {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.cfg = cfg
+	c.cfg = normalise(cfg)
 	c.lastTriggeredMinute = -1
 	// A missing or unreadable alarm sound is not fatal: the clock still tells
 	// the time, and the settings dialog is where it gets fixed.
@@ -153,6 +162,7 @@ func (c *ClockService) SetConfig(cfg config.Config) error {
 	soundChanged := c.cfg == nil ||
 		c.cfg.Alarm.SoundFile != cfg.Alarm.SoundFile ||
 		c.cfg.Alarm.IsUser != cfg.Alarm.IsUser
+	cfg = *normalise(&cfg)
 	c.cfg = &cfg
 	if soundChanged {
 		c.loadAlarmDataLocked()

@@ -1,31 +1,41 @@
 // SPDX-FileCopyrightText: 2026 Joel L. Caesar
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build fyne
-
-// The superseded Fyne entry point, kept as a reference for the feature set the
-// Wails build replaces. Build it with -tags fyne; the default build is Wails.
+// Go-Clock: a windowed seven-segment clock with an alarm.
+//
+// Go owns the config file, the audio device, the native file dialog and the
+// alarm checker. Everything visible belongs to the frontend in frontend/dist,
+// which reaches Go through ClockService's generated bindings and three events.
 package main
 
 import (
-	"GO-Clock/clock"
-	"GO-Clock/ui"
-	"context"
+	"embed"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
+	"GO-Clock/audio"
+
 	"github.com/gofrs/flock"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// main is the application entry point. It handles instance locking,
-// application state initialization, and UI construction.
+//go:embed all:frontend/dist
+var frontendAssets embed.FS
+
+// The two window widths the clock uses: narrow for HH:MM, wide for HH:MM:SS.
+// Carried over from the Fyne build unchanged.
+const (
+	windowWidth            = 658
+	windowWidthWithSeconds = 915
+	windowHeight           = 240
+)
+
 func main() {
-	// Lock instance to prevent multiple instances
+	// Instance locking, ported unchanged from the Fyne build. A second copy of
+	// a clock is never what anyone wanted, and a second copy of an alarm is
+	// actively wrong.
 	configDir, err := os.UserConfigDir()
 	if err == nil {
 		lockDir := filepath.Join(configDir, "Go-Clock")
@@ -47,74 +57,72 @@ func main() {
 		}()
 	}
 
-	appID := "com.go-clock.app"
-	cacheDir, err := os.UserCacheDir()
-	if err == nil {
-		prefPath := filepath.Join(cacheDir, "FyneApp", appID, "Preferences.json")
-		info, err := os.Stat(prefPath)
-		if err == nil && info.Size() == 0 {
-			os.Remove(prefPath)
-		}
-	}
+	clock := &ClockService{}
 
-	s := &AppState{
-		App: app.NewWithID(appID),
-		Wg:  &sync.WaitGroup{},
-	}
-	s.Window = s.App.NewWindow("Clock")
-	s.Ctx, s.Cancel = context.WithCancel(context.Background())
+	// Closed on shutdown to stop the alarm checker. A channel rather than a
+	// context because nothing here carries deadlines or values.
+	done := make(chan struct{})
 
-	if err := s.setupConfig(); err != nil {
-		fmt.Println("Error loading config:", err)
-		return
-	}
-
-	s.setupUI()
-	s.setupAudio()
-
-	if err := s.setupResources(); err != nil {
-		ui.ShowFatalError(s.App, "Failed to load resources: "+err.Error())
-		return
-	}
-
-	// Aliases for easier refactoring
-	w := s.Window
-	cfg := s.Cfg
-	ctx := s.Ctx
-	wg := s.Wg
-
-	w.SetCloseIntercept(func() {
-		s.OnExit()
+	app := application.New(application.Options{
+		Name:        "Go-Clock",
+		Description: "A clock",
+		Services: []application.Service{
+			application.NewService(clock),
+		},
+		Assets: application.AssetOptions{
+			// BundledAssetFileServer, not AssetFileServerFS: only the bundled
+			// one also serves the runtime at /wails/runtime.js, which
+			// index.html loads. Without it the page renders but no bindings or
+			// events reach the frontend.
+			Handler: application.BundledAssetFileServer(frontendAssets),
+		},
+		// SPACE snoozes from anywhere in the window, including while the
+		// webview has focus, which is where a frontend key handler alone would
+		// leave gaps.
+		KeyBindings: map[string]func(window application.Window){
+			"space": func(application.Window) { clock.Snooze() },
+		},
+		OnShutdown: func() {
+			close(done)
+			clock.StopAlarm()
+		},
 	})
 
-	s.ClockContainer = clock.NewClockWidget(ctx, wg, s.DigitResources, s.SepResource, cfg.Clock.Mode24h, cfg.Clock.ShowSeconds, s.AmPmLabel, s.Indicator24)
+	clock.app = app
 
-	s.AlarmIcon = ui.NewSizedIcon(s.AlarmResource, 30, 30) // Alarm Icon
-	if !cfg.Alarm.Enabled {
-		s.AlarmIcon.Hide()
+	// Open the audio device before anything tries to use it. beep's speaker
+	// needs this once at startup; without it PlaySound runs against a device
+	// that was never opened and the alarm fires in silence, which is the same
+	// as not firing.
+	audio.InitAudio()
+
+	if err := clock.load(); err != nil {
+		log.Fatalf("loading config: %v", err)
 	}
 
-	sidebar := s.CreateSidebar()
-	w.SetContent(s.CreateMainLayout(sidebar))
-
+	cfg := clock.GetConfig()
+	width := windowWidth
 	if cfg.Clock.ShowSeconds {
-		w.Resize(fyne.NewSize(915, 240))
-	} else {
-		w.Resize(fyne.NewSize(658, 240))
+		width = windowWidthWithSeconds
 	}
-	w.CenterOnScreen()
 
-	// Background tasks: alarm checking and layout correction. Both honour ctx
-	// and are waited on by OnExit.
-	s.RunAlarmChecker(ctx, wg)
-	s.RunLayoutFixer(ctx, wg)
-
-	// SPACE key for snooze
-	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
-		if k.Name == fyne.KeySpace {
-			s.Snooze()
-		}
+	clock.win = app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:   windowMain,
+		Title:  "Clock",
+		Width:  width,
+		Height: windowHeight,
+		// The face is sized for these two widths and the window is an
+		// appliance, not a document. SetSize still drives the seconds toggle.
+		DisableResize: true,
+		// The frontend paints the background from the configured colour; this
+		// only stops a white flash before the first paint.
+		BackgroundColour: application.NewRGB(0, 0, 0),
 	})
+	clock.win.Center()
 
-	w.ShowAndRun()
+	clock.runAlarmChecker(done)
+
+	if err := app.Run(); err != nil {
+		log.Fatal(err)
+	}
 }

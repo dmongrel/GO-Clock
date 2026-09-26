@@ -21,6 +21,11 @@ var DefaultColorConfig = ColorConfig{
 	Sidebar:    "#777799",
 }
 
+// DefaultSnoozeMinutes is the interval a config with no snooze value gets. A
+// zero would make time.AfterFunc fire at once, so a snooze on a fresh install
+// would not snooze at all.
+const DefaultSnoozeMinutes = 10
+
 type AlarmSettings struct {
 	Enabled       bool
 	Time          string // Store as string for easier JSON handling

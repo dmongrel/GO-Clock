@@ -3,8 +3,9 @@
 
 // The seven-segment face, as SVG.
 //
-// The geometry is transcribed from the Fyne build's ui/digit_generator.go,
-// which drew each digit into a 100x200 raster with github.com/fogleman/gg:
+// The geometry is transcribed from the Fyne build's ui/digit_generator.go -
+// deleted now, readable at the pre-wails3 tag - which drew each digit into a
+// 100x200 raster with github.com/fogleman/gg:
 // round-capped lines 15 units wide, at the coordinates below. An SVG line with
 // stroke-linecap="round" and stroke-width="15" is the same shape, so the face
 // keeps its proportions without anyone having to redesign it.

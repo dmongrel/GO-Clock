@@ -21,7 +21,8 @@ custom alarm sounds, and persistent settings.
 ## Set/Upload .MP3, Change Colors
 <img width="1042" height="819" alt="image" src="https://github.com/user-attachments/assets/5e3f7cc6-f6e0-4d0a-b5ee-07099aaafc52" />
 
-The screenshots above are of the Fyne build, which the Wails build reproduces.
+The screenshots above predate the move to Wails; the current build reproduces
+the same face and the same feature set.
 
 ## How it is put together
 Go keeps only what has to be in Go:
@@ -33,18 +34,18 @@ Go keeps only what has to be in Go:
   alarm.
 
 Everything visible belongs to the frontend in `frontend/dist`: the clock face,
-the tick, the sidebar and both dialogs. The two halves meet at `ClockService`,
+the tick, the sidebar, and the Settings and Set Alarm windows - each its own page
+sharing one stylesheet. The two halves meet at `ClockService`,
 whose exported methods Wails generates JavaScript bindings for, plus three
 events - `config:changed`, `alarm:fire` and `alarm:stop`.
 
 The frontend is deliberately plain files with no bundler and no `node_modules`.
 `go:embed` puts `frontend/dist` into the binary, so a release is still one exe.
 
-### The Fyne build
-The original Fyne UI is still in the tree behind the `fyne` build tag, as a
-reference for the feature set. It is not released and not the default. Build it
-with `make build-fyne`; the code for it is `main.go`, `app_state.go`, `clock/`
-and the Fyne files in `ui/`.
+### History
+Go-Clock was a Fyne application until September 2026, with the digits rasterised
+by `fogleman/gg`. That code is gone from the tree; the last commit carrying it is
+tagged `pre-wails3`.
 
 ## Dependencies
 - Go 1.27+
@@ -56,7 +57,7 @@ and the Fyne files in `ui/`.
 - [rsrc](https://github.com/akavel/rsrc) (for embedding application resources)
 - Other dependencies are managed automatically via `go.mod`.
 
-The default build needs **no C compiler**. Only the retained Fyne build does.
+The build needs **no C compiler**.
 
 ## Build & Install
 The project includes a `Makefile` to simplify the build process on Windows (using
@@ -69,8 +70,6 @@ Git Bash).
    go install github.com/akavel/rsrc@latest
    go install github.com/wailsapp/wails/v3/cmd/wails3@latest
    ```
-3. For the Fyne build only, a C compiler (e.g. [MSYS2/MinGW](https://www.msys2.org/)).
-
 ### Build Instructions
 1. **Generate Icon (if changed):**
    If you have updated the alarm clock icon (`images/alarm-clock.svg`), regenerate
@@ -96,7 +95,6 @@ Git Bash).
 |---|---|
 | `build` | The release build: bindings, icon, `-tags production`, no console window |
 | `dev` | A development build with the debug runtime, the devtools and a console |
-| `build-fyne` | The superseded Fyne build, as `Go-Clock-fyne.exe` |
 | `bindings` | Regenerate `frontend/dist/bindings` from the Go service |
 | `test` | `go test ./... -count=1` |
 | `dist` | A GoReleaser release |
