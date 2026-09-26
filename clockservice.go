@@ -192,7 +192,9 @@ func (c *ClockService) applyWindowSize(cfg config.Config) {
 // Settings is a real window rather than a modal inside the clock: the clock
 // window is 240px tall, so anything drawn inside it has 240px to work with.
 func (c *ClockService) OpenSettings() {
-	c.openDialogWindow(windowSettings, "Settings", "/settings.html", 300, 300)
+	// Tall enough that the colour section and its picker are on screen from the
+	// start: a settings window that opens needing a scroll hides half of itself.
+	c.openDialogWindow(windowSettings, "Settings", "/settings.html", 400, 600)
 }
 
 // OpenAlarmDialog shows the Set Alarm window, or focuses it if already open.

@@ -277,10 +277,10 @@ button:hover {
   text-overflow: ellipsis;
 }
 
-/* Short enough that the colour section is reachable without scrolling past a
-   long list in a 300px-tall window. */
+/* Capped rather than free-growing: the list scrolls internally so that a long
+   list of imported sounds cannot push the colour section off screen. */
 #sound-list {
-  height: 92px;
+  height: 168px;
   margin: 0;
   padding: 0;
   overflow-y: auto;
