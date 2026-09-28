@@ -1,0 +1,44 @@
+version: '3'
+
+# The Wails3 build scaffold. `wails3 task package` is what produces a release:
+# it builds the production binary and wraps it in an NSIS installer that carries
+# the icon, the uninstaller entry and the WebView2 bootstrapper.
+#
+# Windows is the only target - the app is a Windows desktop clock - so the
+# darwin, linux, ios and android includes the stock scaffold carries are absent
+# rather than present and broken.
+
+vars:
+  APP_NAME: "Go-Clock"
+  BIN_DIR: "bin"
+  GOOS: '{{.GOOS | default OS}}'
+
+includes:
+  common: ./build/Taskfile.yml
+  windows: ./build/windows/Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the application
+    cmds:
+      - task: "windows:build"
+
+  package:
+    summary: Builds the application and wraps it in an NSIS installer
+    cmds:
+      - task: "windows:package"
+
+  run:
+    summary: Runs the application
+    cmds:
+      - task: "windows:run"
+
+  dev:
+    summary: Runs the application in development mode
+    cmds:
+      - wails3 dev -config ./build/config.yml
+
+  test:
+    summary: Runs the Go tests
+    cmds:
+      - go test ./... -count=1

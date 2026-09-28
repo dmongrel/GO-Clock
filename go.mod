@@ -7,7 +7,6 @@ toolchain go1.27.1
 require (
 	github.com/gofrs/flock v0.13.0
 	github.com/gopxl/beep/v2 v2.0.0
-	github.com/sergeymakinen/go-ico v1.0.0
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef
 	github.com/wailsapp/wails/v3 v3.0.0-beta.24
@@ -24,7 +23,6 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/sergeymakinen/go-bmp v1.0.0 // indirect
 	golang.org/x/image v0.41.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect

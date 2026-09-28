@@ -7,10 +7,11 @@ Icons from https://www.svgrepo.com
 - [Wails v3](https://github.com/wailsapp/wails) - the window and the Go/JS bridge
 - [gopxl/beep](https://github.com/gopxl/beep) - alarm playback
 - [gofrs/flock](https://github.com/gofrs/flock) - single-instance locking
-- [sergeymakinen/go-ico](https://github.com/sergeymakinen/go-ico),
-  [srwiley/oksvg](https://github.com/srwiley/oksvg) and
+- [srwiley/oksvg](https://github.com/srwiley/oksvg) and
   [srwiley/rasterx](https://github.com/srwiley/rasterx) - used by
-  `scripts/create_ico.go` to turn the alarm-clock SVG into the application icon
+  `scripts/create_appicon.go` to rasterise the alarm-clock SVG into the source
+  image the application icon is generated from
+- [NSIS](https://nsis.sourceforge.io/) - the installer, via the Wails3 template
 
 Go-Clock was built with [Fyne](https://fyne.io/) until September 2026, with
 [fogleman/gg](https://github.com/fogleman/gg) rasterising the segmented digits

@@ -49,72 +49,71 @@ tagged `pre-wails3`.
 
 ## Dependencies
 - Go 1.27+
-- [Wails v3](https://v3alpha.wails.io/) CLI, for generating the bindings:
+- [Wails v3](https://v3alpha.wails.io/) CLI, which drives the whole build:
   ```bash
   go install github.com/wailsapp/wails/v3/cmd/wails3@latest
   ```
-- A WebView2 runtime, which ships with Windows 11 and current Windows 10.
-- [rsrc](https://github.com/akavel/rsrc) (for embedding application resources)
+- [NSIS](https://nsis.sourceforge.io/) on `PATH`, to build the installer. Only
+  `wails3 task package` needs it; a plain build does not.
+- A WebView2 runtime, which ships with Windows 11 and current Windows 10. The
+  installer bundles Microsoft's bootstrapper for the machines that lack it.
 - Other dependencies are managed automatically via `go.mod`.
 
-The build needs **no C compiler**.
+The build needs **no C compiler** and **no node toolchain**.
 
 ## Build & Install
-The project includes a `Makefile` to simplify the build process on Windows (using
-Git Bash).
+The build is the standard Wails3 scaffold: `Taskfile.yml` at the root and the
+platform tasks and assets under `build/`. Windows is the only target, so the
+darwin, linux, ios and android includes the scaffold normally carries are absent
+rather than present and broken.
 
-### Prerequisites
-1. Ensure [Go](https://go.dev/) is installed.
-2. Install the `rsrc` and `wails3` tools:
-   ```bash
-   go install github.com/akavel/rsrc@latest
-   go install github.com/wailsapp/wails/v3/cmd/wails3@latest
-   ```
-### Build Instructions
-1. **Generate Icon (if changed):**
-   If you have updated the alarm clock icon (`images/alarm-clock.svg`), regenerate
-   the `.ico` file:
-   ```bash
-   go run scripts/create_ico.go
-   ```
+```bash
+wails3 task build     # bin/Go-Clock.exe
+wails3 task package   # bin/Go-Clock-amd64-installer.exe
+wails3 task run
+```
 
-2. **Build the Application:**
-   ```bash
-   make build
-   ```
-   This regenerates the bindings, embeds the icon and manifest, and produces
-   `Go-Clock.exe` in the project root.
+The `Makefile` is thin wrappers over the same tasks, for anyone whose fingers
+type `make build`.
 
-3. **Run the Application:**
-   ```bash
-   make run
-   ```
-
-### Make targets
 | Target | What it does |
 |---|---|
-| `build` | The release build: bindings, icon, `-tags production`, no console window |
+| `build` | The release build: bindings, icon, version resource, `-tags production`, no console window |
+| `package` | `build`, then the NSIS installer |
 | `dev` | A development build with the debug runtime, the devtools and a console |
 | `bindings` | Regenerate `frontend/dist/bindings` from the Go service |
+| `icon` | Re-derive the icon from `images/alarm-clock.svg` |
 | `test` | `go test ./... -count=1` |
-| `dist` | A GoReleaser release |
 
 **Regenerate the bindings after changing any exported method on `ClockService`.**
-`make build` does it for you; a bare `go build` does not, and a stale binding is
-a frontend call that silently resolves to nothing.
+A build does it for you; a bare `go build` does not, and a stale binding is a
+frontend call that silently resolves to nothing.
 
 ### Installation
-Simply copy the generated `Go-Clock.exe` to your desired location. You can place
-custom `.mp3` files in the `%APPDATA%\Go-Clock\Alarms` directory, or use the
-import button in the settings dialog to add them from any location.
+Run `bin/Go-Clock-amd64-installer.exe`. It installs to
+`%PROGRAMFILES%\Joel L. Caesar\Go-Clock`, adds Start menu and desktop shortcuts
+and an uninstaller entry, and installs the WebView2 runtime if the machine has
+none. `wails3 task package INSTALL_SCOPE=user` builds a per-user installer
+instead, which needs no administrator prompt.
 
-## Resource Generation Workflow
-The project automates icon embedding using the following workflow:
-1. **SVG to ICO:** The script `scripts/create_ico.go` converts
-   `images/alarm-clock.svg` into a multi-resolution `Go-Clock.ico` file.
-2. **Resource Embedding:** The `Makefile`'s `ico` target uses `rsrc` to combine
-   `app.manifest` and `Go-Clock.ico` into an `ico.syso` file. The Go toolchain
-   automatically detects and includes this `.syso` file during the final build.
+The binary is self-contained either way, so copying `bin/Go-Clock.exe` somewhere
+by hand still works. Custom `.mp3` files go in `%APPDATA%\Go-Clock\Alarms`, or
+use the import button in the settings dialog to add them from any location.
+
+## Icon and version resources
+The icon starts as `images/alarm-clock.svg` and reaches the executable in three
+steps, the first of which only runs when the SVG changes:
+
+1. `go run ./scripts` rasterises the SVG to `build/appicon.png`.
+2. `wails3 generate icons` turns that into `build/windows/icon.ico`.
+3. `wails3 generate syso` combines the `.ico`, `build/windows/wails.exe.manifest`
+   and `build/windows/info.json` into a `.syso` that the Go toolchain links in.
+   The build deletes it again afterwards.
+
+`build/windows/info.json` and the installer's names and version are generated
+from `build/config.yml` - edit that and run
+`wails3 task common:update:build-assets`, rather than editing the generated
+files.
 
 ## Features
 - **Settings & Customization:** Open the settings dialog via the gear icon. You

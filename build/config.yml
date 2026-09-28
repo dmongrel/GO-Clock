@@ -1,0 +1,39 @@
+# The source the build assets are generated from. After changing `info`, run
+# `wails3 task common:update:build-assets` to push it into build/windows/info.json
+# (the .exe's version resource) and build/windows/nsis/wails_tools.nsh (the
+# installer's name, install directory and uninstaller entry). That regenerates
+# those files wholesale, so edit them here rather than there.
+version: '3'
+
+info:
+  companyName: "Joel L. Caesar"
+  productName: "Go-Clock"
+  productIdentifier: "com.joellcaesar.goclock"
+  description: "A windowed seven-segment clock with an alarm"
+  copyright: "(c) 2026, Joel L. Caesar"
+  comments: "https://github.com/dmongrel/GO-Clock"
+  version: "1.0.3"
+
+# Dev mode configuration. There is no frontend dev server to start: the frontend
+# is plain files under frontend/dist, so a Go rebuild is the whole loop.
+dev_mode:
+  root_path: .
+  log_level: warn
+  debounce: 1000
+  ignore:
+    dir:
+      - .git
+      - bin
+      - build
+    file:
+      - .DS_Store
+      - .gitignore
+      - "*_test.go"
+    watched_extension:
+      - "*.go"
+    git_ignore: true
+  executes:
+    - cmd: wails3 build DEV=true
+      type: blocking
+    - cmd: wails3 task run
+      type: primary

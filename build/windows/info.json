@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "1.0.3"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "1.0.3",
+			"CompanyName": "Joel L. Caesar",
+			"FileDescription": "A windowed seven-segment clock with an alarm",
+			"LegalCopyright": "(c) 2026, Joel L. Caesar",
+			"ProductName": "Go-Clock",
+			"Comments": "https://github.com/dmongrel/GO-Clock"
+		}
+	}
+}

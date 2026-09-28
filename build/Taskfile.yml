@@ -1,0 +1,70 @@
+version: '3'
+
+# The common half of the Wails3 build scaffold, trimmed to what this project
+# actually has. Two things differ from the stock file `wails3 init` writes:
+#
+#   - There is no node toolchain. The frontend is plain files under
+#     frontend/dist, embedded by assets.go and served straight out, so the
+#     npm/bun/pnpm/yarn install tasks and the bundler run have nothing to do.
+#     `build:frontend` therefore reduces to generating the bindings.
+#   - The Docker cross-compilation, server-mode and iOS tasks are gone. This is
+#     a Windows desktop application and nothing else.
+
+tasks:
+  go:mod:tidy:
+    summary: Runs `go mod tidy`
+    internal: true
+    run: once
+    cmds:
+      - go mod tidy
+
+  build:frontend:
+    summary: Prepares the frontend for a build
+    # Kept under the name the platform Taskfiles expect. There is nothing to
+    # bundle - the only generated part of the frontend is the bindings.
+    run: once
+    deps:
+      - task: generate:bindings
+
+  generate:bindings:
+    summary: Generates bindings for the frontend
+    run: once
+    deps:
+      - task: go:mod:tidy
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - frontend/dist/bindings/**/*
+    cmds:
+      # -b bundles the Wails runtime into the generated package rather than
+      # importing @wailsio/runtime from node_modules, which is what lets this
+      # frontend stay plain files. -d puts them beside the pages that import
+      # them, since frontend/dist is served as-is.
+      - wails3 generate bindings -b -d frontend/dist/bindings -clean=true
+
+  generate:icons:
+    summary: Generates the Windows `.ico` from build/appicon.png
+    run: once
+    dir: build
+    sources:
+      - "appicon.png"
+    generates:
+      - "windows/icon.ico"
+    cmds:
+      # `wails3 generate icons` always writes a macOS .icns as well and has no
+      # flag to suppress it. It is written here rather than into its usual
+      # build/darwin/ (which would not exist, and which this Windows-only
+      # project does not keep) and deleted again.
+      - wails3 generate icons -input appicon.png -windowsfilename windows/icon.ico -macfilename icon.icns
+      - cmd: powershell -Command "Remove-Item -Force -ErrorAction SilentlyContinue icon.icns"
+        platforms: [windows]
+      - cmd: rm -f icon.icns
+        platforms: [linux, darwin]
+
+  update:build-assets:
+    summary: Regenerates the build assets from build/config.yml
+    dir: build
+    cmds:
+      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config config.yml -dir .

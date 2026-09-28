@@ -1,32 +1,34 @@
-.PHONY: build dev bindings ico run test dist snapshot
+.PHONY: build package run dev bindings icon test
 
-# -tags production swaps the bundled Wails runtime from the 516 KB debug module
-# to the 57 KB one and drops the devtools, so it is what a release wants.
-build: ico bindings
-	GOOS=windows GOARCH=amd64 go build -tags production -ldflags="-H=windowsgui" -o Go-Clock.exe
+# Thin wrappers over the Wails3 build scaffold in Taskfile.yml and build/.
+# Everything the build actually does lives there; this file exists so `make`
+# still works from muscle memory.
 
-# A development build: the debug runtime, the devtools, and a console window, so
-# a frontend error is visible instead of silent.
-dev: bindings
-	go build -o Go-Clock-dev.exe
+# A production build: bin/Go-Clock.exe, the small runtime, no console window.
+build:
+	wails3 task build
 
-# The frontend calls into Go through generated bindings. -b bundles the runtime
-# rather than expecting an npm @wailsio/runtime install, which is what lets this
-# frontend stay plain files with no node toolchain.
+# A release: the production build wrapped in an NSIS installer, written to
+# bin/Go-Clock-amd64-installer.exe.
+package:
+	wails3 task package
+
+run:
+	wails3 task run
+
+# A development build: the debug runtime, the devtools, and a console window,
+# so a frontend error is visible instead of silent.
+dev:
+	wails3 task build DEV=true
+
 bindings:
-	wails3 generate bindings -b -d frontend/dist/bindings
+	wails3 task common:generate:bindings
 
-ico:
-	rsrc -manifest app.manifest -ico Go-Clock.ico -o ico.syso
-
-run: build
-	./Go-Clock.exe
+# Only needed after images/alarm-clock.svg changes: SVG -> build/appicon.png
+# -> build/windows/icon.ico.
+icon:
+	go run ./scripts
+	wails3 task common:generate:icons
 
 test:
 	go test ./... -count=1
-
-dist: build
-	goreleaser release --clean
-
-snapshot:
-	goreleaser release --snapshot --clean
